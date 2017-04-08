@@ -6,44 +6,65 @@ use std::path::{ Path, PathBuf };
 use cmake::Config;
 
 fn main() {
-    // Making sure that we clone the submodules
-    let mut git_submodule_update = Command::new("git");
-    run(git_submodule_update.args(&["submodule", "update", "--init", "--recursive"]),
-        "git");
+    let qmake_path = {
+        // Try to find "QMAKE_PATH" environment variable
+        let qmake_system_env = option_env!("QMAKE_PATH");
+        let qmake_system_env = qmake_system_env.and_then(|path| {
+            if path.is_empty() {
+                None
+            } else {
+                Some(String::from(path))
+            }
+        });
 
-    // Try to find "QMAKE_PATH" environment variable
-    let qmake_system_env = option_env!("QMAKE_PATH");
-    let qmake_system_env = qmake_system_env.and_then(|path| {
-        if path.is_empty() {
-            None
-        } else {
-            Some(String::from(path))
+        ::dotenv::dotenv().ok();
+        let qmake_dotenv_env = ::std::env::var("QMAKE_PATH").ok();
+        let qmake_dotenv_env = qmake_dotenv_env.and_then(|path| {
+            if path.is_empty() {
+                None
+            } else {
+                Some(path)
+            }
+        });
+
+        // dotenv has priority(the user can overwrite system variables)
+        match qmake_dotenv_env.or(qmake_system_env) {
+            Some(path) => path,
+            None => fail("\"QMAKE_PATH\" was not defined. \
+                         Please define the variable to point to the \"qmake\" binary"),
         }
-    });
-
-    ::dotenv::dotenv().ok();
-    let qmake_dotenv_env = ::std::env::var("QMAKE_PATH").ok();
-    let qmake_dotenv_env = qmake_dotenv_env.and_then(|path| {
-        if path.is_empty() {
-            None
-        } else {
-            Some(path)
-        }
-    });
-
-    // dotenv has priority(the user can overwrite system variables)
-    let qmake_path = match qmake_dotenv_env.or(qmake_system_env) {
-        Some(path) => path,
-        None => fail("\"QMAKE_PATH\" was not defined. \
-                     Please define the variable to point to the \"qmake\" binary"),
     };
 
     // Lets try to run "qmake --version" to make sure it doesn't throw an error
-    let mut assert_qmake = Command::new(qmake_path);
-    run(assert_qmake.arg("--version"), "qmake");
+    {
+        let mut assert_qmake = Command::new(&qmake_path);
+        run(assert_qmake.arg("--version"), "qmake");
+    }
+
+    // Lets make sure we have `cmake` before doing heavier operations
+    {
+        let mut assert_cmake = Command::new("cmake");
+        run(assert_cmake.arg("--version"), "cmake");
+    }
+
+    let deps_folder = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("deps");
+    // Making sure that we clone the submodules
+    {
+        let mut should_update = false;
+        for path in &["clang", "cxxbasics", "llvm", "qt-creator"] {
+            if !deps_folder.join(path).join(".git").exists() {
+                should_update = true;
+            }
+        }
+
+        if should_update {
+            let mut git_submodule_update = Command::new("git");
+            run(git_submodule_update.args(&["submodule", "update", "--init", "--recursive"]),
+                "git");
+        }
+    }
 
     // Compiling Clang and QtCreator
-    let deps_folder = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("deps");
     add_clang_link(deps_folder.as_path());
     compile_clang(deps_folder.as_path());
     compile_qtcreator(deps_folder.as_path());
@@ -58,7 +79,7 @@ fn compile_clang(deps_folder: &Path) {
     use std::ffi::OsString;
 
     // Can't use CXXBasics, limitation in the `cmake` crate
-//    let cxxbasics_path = deps_folder.join("cxxbasics/CXXBasics.cmake");
+    //    let cxxbasics_path = deps_folder.join("cxxbasics/CXXBasics.cmake");
     let install_path = deps_folder.join("clang-toolchain");
     if install_path.join("bin").join("clang").exists() {
         return;
