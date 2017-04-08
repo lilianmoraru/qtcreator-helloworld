@@ -1,0 +1,10 @@
+[package]
+name = "helloworld-core"
+version = "0.1.0"
+authors = ["Lilian A. Moraru <lilian.moraru90@gmail.com>"]
+
+[dependencies]
+
+[build-dependencies]
+dotenv = "0.10"
+cmake  = "0.1"
