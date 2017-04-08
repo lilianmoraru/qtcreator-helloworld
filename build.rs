@@ -59,9 +59,13 @@ fn compile_clang(deps_folder: &Path) {
 
     // Can't use CXXBasics, limitation in the `cmake` crate
 //    let cxxbasics_path = deps_folder.join("cxxbasics/CXXBasics.cmake");
-    let llvm_src_path  = deps_folder.join("llvm");
-    let build_path     = deps_folder.join("build-clang");
-    let install_path   = deps_folder.join("clang-toolchain");
+    let install_path = deps_folder.join("clang-toolchain");
+    if install_path.join("bin").join("clang").exists() {
+        return;
+    }
+
+    let llvm_src_path = deps_folder.join("llvm");
+    let build_path    = deps_folder.join("build-clang");
 
     // Select a generator
     let mut cmake_config = Config::new(llvm_src_path);
