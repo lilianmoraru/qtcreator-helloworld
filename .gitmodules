@@ -1,0 +1,16 @@
+[submodule "deps/qt-creator"]
+	path = deps/qt-creator
+	url = https://code.qt.io/qt-creator/qt-creator.git
+	branch = 4.3
+[submodule "deps/llvm"]
+	path = deps/llvm
+	url = https://github.com/llvm-mirror/llvm.git
+	branch = release_40
+[submodule "deps/llvm/tools/clang"]
+	path = deps/llvm/tools/clang
+	url = https://github.com/llvm-mirror/clang.git
+	branch = release_40
+[submodule "deps/cxxbasics"]
+	path = deps/cxxbasics
+	url = https://github.com/lilianmoraru/cxxbasics.git
+	branch = master
