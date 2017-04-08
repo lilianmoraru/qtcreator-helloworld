@@ -3,6 +3,7 @@ extern crate dotenv;
 
 use std::process::Command;
 use std::path::{ Path, PathBuf };
+use cmake::Config;
 
 fn main() {
     // Making sure that we clone the submodules
@@ -54,11 +55,50 @@ fn compile_qtcreator(deps_folder: &Path) {
 }
 
 fn compile_clang(deps_folder: &Path) {
-    // destination: deps/clang-toolchain
+    use std::ffi::OsString;
+
+    // Can't use CXXBasics, limitation in the `cmake` crate
+//    let cxxbasics_path = deps_folder.join("cxxbasics/CXXBasics.cmake");
+    let llvm_src_path  = deps_folder.join("llvm");
+    let build_path     = deps_folder.join("build-clang");
+    let install_path   = deps_folder.join("clang-toolchain");
+
+    // Select a generator
+    let mut cmake_config = Config::new(llvm_src_path);
+    if cfg!(unix) {
+        cmake_config.generator("Unix Makefiles");
+    } else if cfg!(windows) {
+        cmake_config.generator("NMake Makefiles");
+    } else {
+        fail("Unsupported HOST system");
+    }
+
+    // Set install prefix
+    cmake_config.define("CMAKE_INSTALL_PREFIX", install_path.into_os_string());
+
+    // We always want to build clang in Release mode
+    cmake_config.profile("Release");
+    cmake_config.define("LLVM_ENABLE_RTTI", "ON");
+
+    // Fire it up
+    cmake_config.build();
 }
 
 fn add_clang_link(deps_folder: &Path) {
-    // deps/llvm/tools/clang -> deps/clang
+    let expected_clang_path = deps_folder.join("llvm").join("tools").join("clang");
+    if !expected_clang_path.exists() {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+            symlink(deps_folder.join("clang"), expected_clang_path).unwrap();
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::symlink_dir;
+            symlink_dir(deps_folder.join("clang"), expected_clang_path).unwrap();
+        }
+    }
 }
 
 fn run(cmd: &mut Command, program: &str) {
