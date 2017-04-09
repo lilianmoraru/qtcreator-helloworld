@@ -72,7 +72,13 @@ fn compile_qtcreator(deps_folder: &Path, qmake_path: &String) {
     {
         let clang_bin_path = deps_folder.join("clang-toolchain").join("bin");
         let mut path_final = String::from(clang_bin_path.to_str().unwrap());
-        path_final.push(':');
+        if cfg!(unix) {
+            path_final.push(':');
+        } else if cfg!(windows) {
+            path_final.push(';');
+        } else {
+            fail("Unsupported HOST system");
+        }
         path_final.push_str(env!("PATH"));
 
         ::std::env::set_var("PATH", path_final);
