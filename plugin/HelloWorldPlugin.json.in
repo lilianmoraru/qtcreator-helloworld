@@ -1,0 +1,10 @@
+{
+    \"Name\" : \"TestPlugin\",
+    \"Version\" : \"0.0.1\",
+    \"CompatVersion\" : \"0.0.1\",
+    \"Vendor\" : \"Lilian Moraru <lilian.moraru90@gmail.com>\",
+    \"Copyright\" : \"Lilian Moraru\",
+    \"License\" : \"UNLICENSE\",
+    \"Description\" : \"This is a test plugin\",
+    $$dependencyList
+}
