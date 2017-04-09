@@ -8,3 +8,4 @@ authors = ["Lilian A. Moraru <lilian.moraru90@gmail.com>"]
 [build-dependencies]
 dotenv = "0.10"
 cmake  = "0.1"
+num_cpus = "1.0"
